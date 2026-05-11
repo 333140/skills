@@ -182,6 +182,9 @@ class ReportGenerator:
         # 有效性状态
         self._add_validity_status(doc)
 
+        # 司法解释与配套规定（新增）
+        self._add_interpretive_context(doc)
+
         # 置信度评估
         self._add_confidence(doc)
 
@@ -197,7 +200,9 @@ class ReportGenerator:
 
         self._add_heading(doc, "📋 核验对象", level=2)
 
-        table = self._create_table(doc, cols=2, rows=5, col_widths=[3, 12])
+        # 基本信息表（含用户适用意图）
+        row_count = 7  # 增加2行：用户适用意图 + 关键词
+        table = self._create_table(doc, cols=2, rows=row_count, col_widths=[3, 12])
 
         fields = [
             ("法律名称", obj.get('law_name', '—')),
@@ -205,12 +210,31 @@ class ReportGenerator:
             ("颁布机关", obj.get('issuing_authority', '—')),
             ("版本年份", obj.get('version_year', '未指定')),
             ("用户提供内容", obj.get('user_text', '—')),
+            ("用户适用意图", obj.get('user_intent', '未提供')),
+            ("关键词提取", self._format_keywords(obj.get('keywords', {}))),
         ]
 
         for i, (label, value) in enumerate(fields):
             row = table.rows[i]
-            self._set_cell(row.cells[0], label, bold=True, bg_color=DARK_BLUE, font_color=WHITE)
+            label_color = DARK_BLUE
+            # 用户适用意图行高亮
+            if label == "用户适用意图" and value != '未提供':
+                label_color = ORANGE
+            self._set_cell(row.cells[0], label, bold=True, bg_color=label_color, font_color=WHITE)
             self._set_cell(row.cells[1], str(value))
+
+    def _format_keywords(self, keywords: dict) -> str:
+        """格式化关键词提取结果"""
+        if not keywords:
+            return '未提取'
+        core = keywords.get('core_terms', [])
+        divergence = keywords.get('divergence_points', [])
+        parts = []
+        if core:
+            parts.append(f"核心术语：{', '.join(core)}")
+        if divergence:
+            parts.append(f"分歧点：{', '.join(divergence)}")
+        return '；'.join(parts) if parts else '未提取'
 
     def _add_sources(self, doc):
         """添加核验来源"""
@@ -371,6 +395,170 @@ class ReportGenerator:
             label_run.font.color.rgb = self.RGBColor.from_string(ORANGE)
             rep_para.add_run(replacement_detail)
 
+    def _add_interpretive_context(self, doc):
+        """添加司法解释与适用性审查信息（v1.2.0 增强）"""
+        ic = self.data.get('interpretive_context', {})
+
+        self._add_heading(doc, "🔎 司法解释与适用性审查", level=2)
+
+        has_issue = ic.get('has_interpretive_issue', False)
+        diff_level = ic.get('interpretive_diff_level')
+        interpretations = ic.get('judicial_interpretations', [])
+        regulations = ic.get('supporting_regulations', [])
+        note = ic.get('interpretive_note', '')
+        user_intent_analyzed = ic.get('user_intent_analyzed', '')
+        keyword_searches = ic.get('keyword_searches_performed', [])
+
+        # 用户适用意图分析
+        if user_intent_analyzed:
+            intent_para = doc.add_paragraph()
+            label_run = intent_para.add_run("用户理解分析：")
+            label_run.bold = True
+            label_run.font.size = self.Pt(10)
+            intent_para.add_run(user_intent_analyzed)
+
+        # 搜索执行记录（v1.2.0新增）
+        if keyword_searches:
+            self._add_paragraph(doc, "")
+            search_label = doc.add_paragraph()
+            run = search_label.add_run("双轨搜索执行记录：")
+            run.bold = True
+            run.font.size = self.Pt(10)
+
+            search_table = self._create_table(doc, cols=4, rows=len(keyword_searches) + 1,
+                                               col_widths=[3, 7, 2, 3])
+            header = search_table.rows[0]
+            headers = ["搜索轨道", "查询内容", "结果", "备注"]
+            for i, h in enumerate(headers):
+                self._set_cell(header.cells[i], h, bold=True, bg_color=DARK_BLUE, font_color=WHITE,
+                              align=self.WD_ALIGN_PARAGRAPH.CENTER, size=self.Pt(9))
+
+            for i, search in enumerate(keyword_searches):
+                row = search_table.rows[i + 1]
+                bg = LIGHT_GRAY if i % 2 == 0 else WHITE
+                found = search.get('results_found', False)
+                result_text = "✅ 找到" if found else "—"
+                result_color = GREEN if found else MEDIUM_GRAY
+
+                self._set_cell(row.cells[0], search.get('track', '—'), bg_color=bg, size=self.Pt(9))
+                self._set_cell(row.cells[1], search.get('query', '—'), bg_color=bg, size=self.Pt(9))
+                self._set_cell(row.cells[2], result_text, bg_color=bg, font_color=result_color,
+                              align=self.WD_ALIGN_PARAGRAPH.CENTER, size=self.Pt(9))
+                self._set_cell(row.cells[3], search.get('note', ''), bg_color=bg, size=self.Pt(9))
+
+        # 解释性差异级别
+        if diff_level:
+            ic_labels = {
+                'IC-CD': '严重解释性差异',
+                'IC-SD': '实质解释性差异',
+                'IC-MN': '轻微解释性差异',
+                'IC-Info': '提示性信息',
+                'IC-Pending': '发现但未判定（用户未提供适用意图）',
+            }
+            ic_colors = {
+                'IC-CD': RED,
+                'IC-SD': ORANGE,
+                'IC-MN': GOLD,
+                'IC-Info': GREEN,
+                'IC-Pending': MEDIUM_GRAY,
+            }
+            label = ic_labels.get(diff_level, '未知')
+            color = ic_colors.get(diff_level, MEDIUM_GRAY)
+
+            level_para = doc.add_paragraph()
+            run = level_para.add_run(f"解释性差异：{label}（{diff_level}）")
+            run.bold = True
+            run.font.size = self.Pt(12)
+            run.font.color.rgb = self.RGBColor.from_string(color)
+
+        # 司法解释列表
+        if interpretations:
+            self._add_paragraph(doc, "")
+            sub_heading = doc.add_paragraph()
+            run = sub_heading.add_run("相关司法解释：")
+            run.bold = True
+            run.font.size = self.Pt(10)
+
+            for interp in interpretations:
+                table = self._create_table(doc, cols=2, rows=6, col_widths=[3, 12])
+                fields = [
+                    ("名称", interp.get('name', '—')),
+                    ("文号", interp.get('document_number', '—')),
+                    ("施行日期", interp.get('effective_date', '—')),
+                    ("相关条款", interp.get('relevant_article', '—')),
+                    ("发现轨道", interp.get('found_by_track', '未标注')),
+                    ("影响说明", interp.get('impact', '—')),
+                ]
+                for i, (label, value) in enumerate(fields):
+                    row = table.rows[i]
+                    label_bg = DARK_BLUE
+                    # 发现轨道行用绿色高亮
+                    if label == "发现轨道" and value == '关键词级':
+                        label_bg = GREEN
+                    self._set_cell(row.cells[0], label, bold=True, bg_color=label_bg, font_color=WHITE,
+                                  size=self.Pt(9))
+                    self._set_cell(row.cells[1], str(value), size=self.Pt(9))
+
+                # 条文内容
+                content = interp.get('content', '')
+                if content:
+                    content_para = doc.add_paragraph()
+                    content_para.paragraph_format.left_indent = self.Cm(0.5)
+                    content_run = content_para.add_run(f"条文内容：{content}")
+                    content_run.font.size = self.Pt(9)
+                    content_run.italic = True
+        else:
+            search_note = doc.add_paragraph()
+            run = search_note.add_run("✅ 已执行法条级+关键词级搜索，未发现与该条款直接相关的司法解释")
+            run.font.color.rgb = self.RGBColor.from_string(GREEN)
+            run.font.size = self.Pt(9)
+
+        # 配套规定列表
+        if regulations:
+            self._add_paragraph(doc, "")
+            reg_heading = doc.add_paragraph()
+            run = reg_heading.add_run("相关配套规定：")
+            run.bold = True
+            run.font.size = self.Pt(10)
+
+            for reg in regulations:
+                reg_para = doc.add_paragraph()
+                reg_para.paragraph_format.left_indent = self.Cm(0.5)
+                reg_run = reg_para.add_run(f"• {reg.get('name', '—')}：{reg.get('impact', '')}")
+                reg_run.font.size = self.Pt(9)
+
+        # 解释性差异警告
+        if diff_level in ('IC-CD', 'IC-SD'):
+            self._add_paragraph(doc, "")
+            # 红色醒目警告框
+            warn_table = self._create_table(doc, cols=1, rows=1, col_widths=[15])
+            cell = warn_table.rows[0].cells[0]
+            warn_text = (
+                "⚠️ 解释性差异警告：虽然法条文本与官方原文完全一致，"
+                "但相关司法解释已改变/明确了该条款的理解方式。"
+                "请参考上述司法解释重新审视法律适用。"
+            )
+            self._set_cell(cell, warn_text, bold=True, font_color=WHITE, bg_color=RED, size=self.Pt(10))
+
+        # IC-Pending提醒
+        if diff_level == 'IC-Pending':
+            self._add_paragraph(doc, "")
+            pending_para = doc.add_paragraph()
+            run = pending_para.add_run(
+                "ℹ️ 发现相关司法解释，但因未提供用户适用意图，无法判定解释性差异级别。"
+                "建议说明您基于该条款的法律论点，以便完成判定。"
+            )
+            run.font.color.rgb = self.RGBColor.from_string(GOLD)
+            run.font.size = self.Pt(10)
+
+        # 备注说明
+        if note:
+            note_para = doc.add_paragraph()
+            note_run = note_para.add_run(f"备注：{note}")
+            note_run.font.italic = True
+            note_run.font.color.rgb = self.RGBColor.from_string(MEDIUM_GRAY)
+            note_run.font.size = self.Pt(9)
+
     def _add_confidence(self, doc):
         """添加置信度评估"""
         confidence = self.data.get('confidence', {})
@@ -400,6 +588,10 @@ class ReportGenerator:
                 'latest_version_confirmed': '最新版本已确认',
                 'word_by_word_comparison_done': '逐字比对已完成',
                 'proviso_checked': '但书/除外条款已检查',
+                'judicial_interpretation_searched': '司法解释法条级搜索',
+                'keyword_level_search_performed': '司法解释关键词级搜索',
+                'supporting_regulations_searched': '配套规定已检索',
+                'user_intent_confirmed': '用户适用意图已确认',
             }
 
             table = self._create_table(doc, cols=2, rows=len(factors) + 1,
@@ -485,15 +677,30 @@ class ReportGenerator:
 
         if items:
             overview_table = self._create_table(
-                doc, cols=6, rows=len(items) + 1,
-                col_widths=[1, 4, 2, 2, 2, 4]
+                doc, cols=7, rows=len(items) + 1,
+                col_widths=[1, 3.5, 1.5, 1.5, 1.5, 2, 3.5]
             )
 
             header = overview_table.rows[0]
-            headers = ["序号", "法律名称", "条款", "内容核验", "有效性", "说明"]
+            headers = ["序号", "法律名称", "条款", "内容核验", "有效性", "解释性差异", "说明"]
             for i, h in enumerate(headers):
                 self._set_cell(header.cells[i], h, bold=True, bg_color=DARK_BLUE, font_color=WHITE,
                               align=self.WD_ALIGN_PARAGRAPH.CENTER)
+
+            ic_labels_map = {
+                'IC-CD': '严重',
+                'IC-SD': '实质',
+                'IC-MN': '轻微',
+                'IC-Info': '提示',
+                'IC-Pending': '待判定',
+            }
+            ic_colors_map = {
+                'IC-CD': RED,
+                'IC-SD': ORANGE,
+                'IC-MN': GOLD,
+                'IC-Info': GREEN,
+                'IC-Pending': MEDIUM_GRAY,
+            }
 
             for i, item in enumerate(items):
                 row = overview_table.rows[i + 1]
@@ -501,6 +708,7 @@ class ReportGenerator:
 
                 diff_level = item.get('diff_level', 'UV')
                 validity = item.get('validity', 'unknown')
+                ic_level = item.get('interpretive_diff_level')
 
                 diff_label = DIFF_LABELS.get(diff_level, '—')
                 diff_color = DIFF_COLORS.get(diff_level, MEDIUM_GRAY)
@@ -515,10 +723,23 @@ class ReportGenerator:
                               align=self.WD_ALIGN_PARAGRAPH.CENTER)
                 self._set_cell(row.cells[4], valid_label, bg_color=valid_color, font_color=WHITE,
                               align=self.WD_ALIGN_PARAGRAPH.CENTER)
-                self._set_cell(row.cells[5], item.get('note', ''), bg_color=bg)
+
+                # 解释性差异列
+                if ic_level:
+                    ic_label = ic_labels_map.get(ic_level, '—')
+                    ic_color = ic_colors_map.get(ic_level, MEDIUM_GRAY)
+                    self._set_cell(row.cells[5], ic_label, bg_color=ic_color, font_color=WHITE,
+                                  align=self.WD_ALIGN_PARAGRAPH.CENTER)
+                else:
+                    self._set_cell(row.cells[5], '—', bg_color=bg, align=self.WD_ALIGN_PARAGRAPH.CENTER)
+
+                self._set_cell(row.cells[6], item.get('note', ''), bg_color=bg)
 
         # 详细核验信息
-        detail_items = [item for item in items if item.get('diff_level', 'ID') != 'ID' or item.get('validity') != 'current']
+        detail_items = [item for item in items
+                       if item.get('diff_level', 'ID') != 'ID'
+                       or item.get('validity') != 'current'
+                       or item.get('interpretive_diff_level')]
         if detail_items:
             self._add_heading(doc, "🔍 详细核验信息", level=2)
             for item in detail_items:
@@ -537,6 +758,22 @@ class ReportGenerator:
                     note_run = note_para.add_run(f"• 有效性：{item['validity_note']}")
                     note_run.font.size = self.Pt(10)
 
+                # 司法解释说明
+                if item.get('judicial_interpretations'):
+                    for interp in item['judicial_interpretations']:
+                        interp_para = doc.add_paragraph()
+                        run = interp_para.add_run(f"• 司法解释：{interp.get('name', '—')} — {interp.get('impact', '')}")
+                        run.font.size = self.Pt(10)
+                        if item.get('interpretive_diff_level') in ('IC-CD', 'IC-SD'):
+                            run.font.color.rgb = self.RGBColor.from_string(RED)
+
+                # 用户适用意图
+                if item.get('user_intent'):
+                    intent_para = doc.add_paragraph()
+                    intent_run = intent_para.add_run(f"• 用户适用意图：{item['user_intent']}")
+                    intent_run.font.size = self.Pt(10)
+                    intent_run.italic = True
+
         # 总结建议
         summary = self.data.get('summary', {})
         self._add_heading(doc, "💡 总结建议", level=2)
@@ -545,6 +782,7 @@ class ReportGenerator:
             'continue': ('✅ 可继续使用', GREEN),
             'needs_correction': ('❌ 需修正内容', RED),
             'needs_replacement': ('🔄 需更换法律', ORANGE),
+            'needs_reinterpretation': ('📜 需重新理解', ORANGE),
         }
 
         for key, (label, color) in categories.items():
