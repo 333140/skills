@@ -1,0 +1,47 @@
+[
+  {
+    "law_name": "中华人民共和国劳动合同法",
+    "article": 14,
+    "paragraph": 2,
+    "item": 3,
+    "user_text": "连续订立二次固定期限劳动合同，且劳动者没有本法第三十九条和第四十条第一项、第二项规定的情形，续订劳动合同的",
+    "user_intent": "原告认为原劳动合同与延长协议构成连续订立二次固定期限劳动合同，应当订立无固定期限劳动合同",
+    "location": "第二部分（二）段"
+  },
+  {
+    "law_name": "中华人民共和国劳动合同法",
+    "article": 35,
+    "paragraph": null,
+    "item": null,
+    "user_text": "用人单位与劳动者协商一致，可以变更劳动合同约定的内容",
+    "user_intent": "被告认为延长协议属于劳动合同变更，而非重新订立合同",
+    "location": "第二部分（一）段"
+  },
+  {
+    "law_name": "中华人民共和国劳动合同法",
+    "article": 44,
+    "paragraph": 1,
+    "item": null,
+    "user_text": "劳动合同期满的，劳动合同终止",
+    "user_intent": "被告认为劳动合同期满终止属于合法终止",
+    "location": "第三部分"
+  },
+  {
+    "law_name": "中华人民共和国劳动合同法",
+    "article": 87,
+    "paragraph": null,
+    "item": null,
+    "user_text": "违法解除或者终止劳动合同的，应当依照本法第四十七条规定的经济补偿标准的二倍向劳动者支付赔偿金",
+    "user_intent": "被告认为不存在违法解除情形，不应支付赔偿金",
+    "location": "第四部分"
+  },
+  {
+    "law_name": "中华人民共和国民法典",
+    "article": 543,
+    "paragraph": null,
+    "item": null,
+    "user_text": "当事人协商一致，可以变更合同",
+    "user_intent": "被告引用民法典支持延长协议属于合同变更的观点",
+    "location": "第二部分（二）段"
+  }
+]
