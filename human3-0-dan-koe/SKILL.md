@@ -1,5 +1,6 @@
 ---
 name: "human3-0-dan-koe"
+> **Version**：1.0.0 | **Creator**：浮生模样（微信公众号 fsmy-2020）| **许可**：MIT
 description: "HUMAN 3.0 development assessor by Dan Koe. Evaluates growth across 4 life quadrants (Mind/Body/Spirit/Vocation), identifies meta-type & lifestyle archetype, and delivers actionable transformation strategies. Invoke when user seeks personal development assessment, life integration guidance, or wants to understand their growth patterns."
 ---
 
