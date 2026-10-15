@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>持股平台个税测算器 · 浮生模样</title>
+<style>
+:root{
+  --navy:#16324f; --navy2:#1e4a72; --navy3:#2c5f88;
+  --gold:#c8a45c; --gold2:#e0c485;
+  --cream:#f6f4ef; --card:#ffffff;
+  --bd:#e4ded1; --bd2:#d4ccba;
+  --ink:#1f2933; --ink2:#4a5568; --ink3:#7b8794;
+  --red:#b0344a; --redbg:#fdf2f4;
+  --green:#2c6e63; --greenbg:#f0f7f5;
+  --amber:#a86e12; --amberbg:#fdf6e8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--cream); color:var(--ink); line-height:1.7;
+  -webkit-font-smoothing:antialiased; font-size:15px;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 16px 60px}
+
+/* header */
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,var(--navy3) 100%);color:#fff;padding:26px 0 22px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border:1px solid rgba(200,164,92,.35);border-radius:50%}
+.hd{max-width:940px;margin:0 auto;padding:0 16px;position:relative;z-index:2}
+.hd .tag{display:inline-block;font-size:11px;letter-spacing:2px;color:var(--gold2);border:1px solid rgba(200,164,92,.5);padding:3px 9px;border-radius:3px;margin-bottom:10px}
+.hd h1{font-size:24px;font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+.hd p{font-size:13px;color:rgba(255,255,255,.72)}
+.hd .warn{margin-top:12px;font-size:12px;color:var(--gold2);background:rgba(0,0,0,.18);border-left:3px solid var(--gold);padding:7px 11px;border-radius:0 4px 4px 0}
+
+/* tabs */
+nav.tabs{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--bd);box-shadow:0 2px 8px rgba(22,50,79,.06)}
+.tabs-in{max-width:940px;margin:0 auto;padding:0 16px;display:flex;overflow-x:auto;gap:2px}
+.tab{flex:none;padding:13px 15px;font-size:14px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--navy2)}
+.tab.on{color:var(--navy);font-weight:600;border-bottom-color:var(--gold)}
+
+section{display:none;padding-top:22px;animation:fade .25s}
+section.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(22,50,79,.04)}
+.card h2{font-size:16px;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:3px;height:15px;background:var(--gold);border-radius:2px}
+.card .sub{font-size:12.5px;color:var(--ink3);margin-bottom:16px;padding-left:11px}
+
+/* form */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.f label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px;font-weight:500}
+.f label .q{color:var(--ink3);font-weight:400;font-size:11.5px}
+input[type=number],input[type=text],select{width:100%;padding:9px 11px;border:1px solid var(--bd2);border-radius:5px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);transition:.15s}
+input:focus,select:focus{outline:none;border-color:var(--navy3);box-shadow:0 0 0 3px rgba(44,95,136,.1)}
+.hint{font-size:11.5px;color:var(--ink3);margin-top:4px}
+.rg{display:flex;flex-wrap:wrap;gap:6px}
+.rg label{flex:1;min-width:100px;position:relative}
+.rg input{position:absolute;opacity:0;width:0;height:0}
+.rg span{display:block;text-align:center;padding:8px 6px;border:1px solid var(--bd2);border-radius:5px;font-size:12.5px;cursor:pointer;background:#fff;transition:.15s;line-height:1.4}
+.rg input:checked+span{border-color:var(--navy2);background:var(--navy);color:#fff;font-weight:600}
+.rg span em{display:block;font-size:10.5px;font-style:normal;opacity:.7;font-weight:400}
+
+.btn{display:inline-block;padding:10px 22px;background:var(--navy);color:#fff;border:none;border-radius:5px;font-size:14px;font-family:inherit;cursor:pointer;transition:.15s;font-weight:500}
+.btn:hover{background:var(--navy2)}
+.btn.g{background:transparent;color:var(--navy);border:1px solid var(--bd2)}
+.btn.g:hover{border-color:var(--navy3);background:#fff}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* result */
+.res{margin-top:18px;border-top:1px dashed var(--bd2);padding-top:18px}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.bx{background:var(--cream);border:1px solid var(--bd);border-radius:7px;padding:13px;text-align:center}
+.bx .l{font-size:11.5px;color:var(--ink3);margin-bottom:5px}
+.bx .n{font-size:21px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.bx .u{font-size:11px;color:var(--ink3);margin-top:2px}
+.bx.hl{background:var(--redbg);border-color:#f0c8d0}
+.bx.hl .n{color:var(--red)}
+.bx.ok{background:var(--greenbg);border-color:#c5e0da}
+.bx.ok .n{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-weight:600;font-size:12.5px}
+td{padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:nth-child(even) td{background:#faf9f6}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tnote{font-size:11.5px;color:var(--ink3);margin-top:8px}
+
+.box{border-radius:6px;padding:12px 14px;font-size:13px;margin-top:14px;line-height:1.65}
+.box.r{background:var(--redbg);border-left:3px solid var(--red);color:#7d2436}
+.box.a{background:var(--amberbg);border-left:3px solid var(--amber);color:#7a5008}
+.box.g{background:var(--greenbg);border-left:3px solid var(--green);color:#1e4f47}
+.box b{font-weight:600}
+.box ul{margin:6px 0 0 16px}
+.box li{margin:3px 0}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px;margin-top:8px}
+.kv dt{color:var(--ink3);white-space:nowrap}
+.kv dd{color:var(--ink)}
+
+/* cases */
+.cs{border:1px solid var(--bd);border-radius:7px;padding:14px;margin-bottom:12px;background:#fff}
+.cs .t{font-weight:600;color:var(--navy);font-size:14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cs .t span{font-size:12px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cs .d{font-size:13px;color:var(--ink2)}
+.cs .m{font-size:11.5px;color:var(--ink3);margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* flow */
+.q{border:1px solid var(--bd);border-radius:7px;padding:14px;margin-bottom:12px;background:#fff}
+.q .qt{font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:9px}
+.rg2{display:flex;flex-direction:column;gap:7px}
+.rg2 label{display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer;padding:7px 9px;border:1px solid var(--bd);border-radius:5px;transition:.15s;background:#fff}
+.rg2 label:hover{border-color:var(--navy3)}
+.rg2 input{margin-top:3px;accent-color:var(--navy2)}
+.rg2 label.on{border-color:var(--navy2);background:#f4f8fb}
+
+.verdict{margin-top:16px;padding:16px;border-radius:8px;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.verdict .vt{font-size:12px;color:var(--gold2);letter-spacing:1px;margin-bottom:6px}
+.verdict .vm{font-size:16px;font-weight:700;margin-bottom:8px}
+.verdict .vb{font-size:13px;line-height:1.7;color:rgba(255,255,255,.9)}
+.verdict .vb code{background:rgba(255,255,255,.15);padding:1px 5px;border-radius:3px;font-size:12px}
+.lv{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;margin-left:6px}
+.lv.h{background:var(--red);color:#fff}
+.lv.m{background:var(--amber);color:#fff}
+.lv.l{background:var(--green);color:#fff}
+
+/* notes */
+.pl{font-size:13px}
+.pl h3{font-size:13.5px;color:var(--navy);margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+.pl h3:first-child{margin-top:0}
+.pl ul{margin-left:16px}
+.pl li{margin:5px 0;color:var(--ink2)}
+.pl code{background:var(--cream);border:1px solid var(--bd);padding:1px 5px;border-radius:3px;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--navy)}
+.pl strong{color:var(--ink)}
+
+footer{border-top:1px solid var(--bd2);margin-top:30px;padding-top:16px;font-size:11.5px;color:var(--ink3);line-height:1.7}
+footer b{color:var(--ink2)}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:99}
+.toast.on{opacity:1;transform:translateX(-50%)}
+
+@media(max-width:600px){
+  .hd h1{font-size:20px}
+  .card{padding:16px}
+  .bx .n{font-size:18px}
+  table{font-size:12px}
+  th,td{padding:7px 6px}
+}
+@media print{
+  nav.tabs,header,.btns,.toast{display:none!important}
+  section{display:block!important;page-break-inside:avoid}
+  body{background:#fff}
+  .card{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <div class="tag">浮生模样 · 财税合规工具</div>
+    <h1>持股平台个税测算器</h1>
+    <p>20% 幻觉 vs 35% 征管真相 —— 输入金额，自己算差额</p>
+    <div class="warn">⚠️ 本工具为政策梳理与测算演示，<b>不构成个案税务意见</b>。各地口径存在差异，具体交易定性请结合架构、地区与主管税务机关沟通确认。</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-in">
+    <div class="tab on" data-t="calc">🧮 税负测算</div>
+    <div class="tab" data-t="cmp">📊 架构对比</div>
+    <div class="tab" data-t="flow">🔍 我是哪种</div>
+    <div class="tab" data-t="case">📁 真实案例</div>
+    <div class="tab" data-t="note">📌 政策要点</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ========== 测算 ========== -->
+<section id="calc" class="on">
+  <div class="card">
+    <h2>基础信息</h2>
+    <div class="sub">按你原文口径：先分后税，平台转让股权净所得分摊至自然人合伙人</div>
+    <div class="grid">
+      <div class="f">
+        <label>平台转让股权净所得（万元）</label>
+        <input type="number" id="amount" value="2000" min="0" step="10">
+        <div class="hint">转让收入减除成本、费用后的净额</div>
+      </div>
+      <div class="f">
+        <label>持股架构</label>
+        <div class="rg" id="arch">
+          <label><input type="radio" name="arch" value="direct"><span>自然人直接持股</span></label>
+          <label><input type="radio" name="arch" value="part" checked><span>合伙型<em>有限合伙平台</em></span></label>
+          <label><input type="radio" name="arch" value="corp"><span>公司型<em>有限公司平台</em></span></label>
+        </div>
+      </div>
+      <div class="f" id="f-pn">
+        <label>自然人合伙人数（人）</label>
+        <input type="number" id="pn" value="1" min="1" max="200" step="1">
+        <div class="hint">人数越多、分得越散，边际税率越低</div>
+      </div>
+      <div class="f" id="f-ratio">
+        <label>本人分配比例（%）</label>
+        <input type="number" id="ratio" value="100" min="0.01" max="100" step="0.5">
+        <div class="hint">先分后税：按分配比例分摊后各自套税率</div>
+      </div>
+      <div class="f" id="f-ded">
+        <label>可否减除 6 万元/年费用扣除</label>
+        <div class="rg">
+          <label><input type="radio" name="ded" value="no" checked><span>不可减除<em>另有综合所得</em></span></label>
+          <label><input type="radio" name="ded" value="yes"><span>可减除<em>当年无工资薪金</em></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>补税情景（可选）</h2>
+    <div class="sub">若已按 20% 申报后被税务机关按经营所得追征，测算补税与滞纳金</div>
+    <div class="grid">
+      <div class="f">
+        <label>是否已按 20% 申报缴纳</label>
+        <div class="rg">
+          <label><input type="radio" name="paid" value="no" checked><span>否<em>仅做测算</em></span></label>
+          <label><input type="radio" name="paid" value="yes"><span>是<em>测算补税</em></span></label>
+        </div>
+      </div>
+      <div class="f" id="f-days">
+        <label>距应缴日天数</label>
+        <input type="number" id="days" value="365" min="0" step="1">
+        <div class="hint">滞纳金按日万分之五，年化约 18.25%</div>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button class="btn" onclick="calc()">开始测算</button>
+      <button class="btn g" onclick="copyRes()">复制结果</button>
+      <button class="btn g" onclick="resetIn()">重置</button>
+    </div>
+
+    <div class="res" id="res"></div>
+  </div>
+</section>
+
+<!-- ========== 架构对比 ========== -->
+<section id="cmp">
+  <div class="card">
+    <h2>三种持股架构税负对照</h2>
+    <div class="sub">同一笔股权转让所得，不同架构的税负差异</div>
+    <table>
+      <thead><tr><th>对比项</th><th>自然人直接持股</th><th>合伙型平台</th><th>公司型平台</th></tr></thead>
+      <tbody>
+        <tr><td><b>转让股权</b></td><td>财产转让所得<br><b style="color:var(--green)">20%</b></td><td>经营所得<br><b style="color:var(--red)">5%~35%</b> 累进</td><td>企业所得税 25%<br>+ 股息红利 20%</td></tr>
+        <tr><td><b>综合税负</b></td><td class="num">20%</td><td class="num">最高 35%</td><td class="num"><b style="color:var(--red)">40%</b></td></tr>
+        <tr><td><b>股息红利</b></td><td class="num">20%</td><td class="num">20%</td><td class="num">20%（居民企业间第一层免税）</td></tr>
+        <tr><td><b>递延纳税</b></td><td>可适用<br>（财税〔2016〕101号）</td><td>多数地区<b>不受理</b><br>备案</td><td>不适用</td></tr>
+        <tr><td><b>核定征收</b></td><td>—</td><td>权益性投资<br><b>2022 年起一律查账</b></td><td>—</td></tr>
+        <tr><td><b>关键风险</b></td><td>无夹层争议</td><td>税目定性争议<br>＋滞纳金</td><td>双重课税<br>且无法递延</td></tr>
+        <tr><td><b>适用场景</b></td><td>直接持股、<br>减持退出</td><td>员工股权激励、<br>多人集中持股</td><td>长期控股、<br>再投资需求</td></tr>
+      </tbody>
+    </table>
+    <div class="box a"><b>反直觉提醒①：</b>合伙型平台在<b>拿股息红利</b>时并无优势——公司型第一层居民企业间股息免税、第二层个人 20%；合伙型依国税函〔2001〕84号同样是 20%。<b>差别只在卖股权赚差价那一下。</b></div>
+    <div class="box a"><b>反直觉提醒②：</b>创投企业按 <code>总局2023年24号公告</code> 可在"单一投资基金核算 20%"与"年度整体核算 5%~35%"之间选择——若 20% 本就是默认，何必单列优惠？<b>说明 20% 是"选出来的"，不是"长出来的"。</b></div>
+  </div>
+</section>
+
+<!-- ========== 判定 ========== -->
+<section id="flow">
+  <div class="card">
+    <h2>四步判定：你该按哪个税率？</h2>
+    <div class="sub">依次作答，自动输出结论、依据与风险等级</div>
+
+    <div class="q">
+      <div class="qt">1. 你以什么身份持有？</div>
+      <div class="rg2" data-g="q1">
+        <label><input type="radio" name="q1" value="a"> 自然人本人直接持有公司股权/上市公司股票</label>
+        <label><input type="radio" name="q1" value="b"> 通过有限合伙企业（持股平台）间接持有</label>
+        <label><input type="radio" name="q1" value="c"> 通过有限责任公司间接持有</label>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="qt">2. 转让的标的是什么？</div>
+      <div class="rg2" data-g="q2">
+        <label><input type="radio" name="q2" value="a"> 上市公司股票 / 限售股</label>
+        <label><input type="radio" name="q2" value="b"> 非上市公司股权</label>
+        <label><input type="radio" name="q2" value="c"> 合伙企业财产份额（我自己的份额）</label>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="qt">3. 你的持股平台是否完成创投企业"双备案"？</div>
+      <div class="rg2" data-g="q3">
+        <label><input type="radio" name="q3" value="a"> 是：创投企业已备案，且备案后 30 日内向税务机关报备按单一投资基金核算</label>
+        <label><input type="radio" name="q3" value="b"> 否 / 不是创投企业</label>
+        <label><input type="radio" name="q3" value="c"> 不清楚</label>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="qt">4. 主管地区是否有"按 20% 征收"的地方招商文件？</div>
+      <div class="rg2" data-g="q4">
+        <label><input type="radio" name="q4" value="a"> 有红头文件，且已按 20% 申报完成</label>
+        <label><input type="radio" name="q4" value="b"> 有，但尚未申报 / 正在交易</label>
+        <label><input type="radio" name="q4" value="c"> 没有 / 不清楚</label>
+      </div>
+    </div>
+
+    <div class="btns"><button class="btn" onclick="judge()">判定</button></div>
+    <div id="verdict"></div>
+  </div>
+</section>
+
+<!-- ========== 案例 ========== -->
+<section id="case">
+  <div class="card">
+    <h2>已发生的真实案例</h2>
+    <div class="sub">从 2016 年到 2025 年，口径没变过</div>
+
+    <div class="cs">
+      <div class="t"><span>追缴 7,988.59 万</span>安徽 · 欧擎海泰投资合伙企业</div>
+      <div class="d">17 名自然人合伙人于 2016 年减持上市公司股票，当时已按 20% 扣缴。后被税务机关认定应按 5%~35% 经营所得补税。</div>
+      <div class="m">合税稽处〔2021〕122号 · 2021 年处理</div>
+    </div>
+
+    <div class="cs">
+      <div class="t"><span>补税+滞纳金 1,619.92 万</span>上市公司 · 浩欧博</div>
+      <div class="d">实际控制人陈涛通过员工持股平台"苏州外润"转让股权，起初按 20% 代扣代缴；2021 年 7 月接到税务部门通知，要求按 35% 补缴。</div>
+      <div class="m">上交所公告披露</div>
+    </div>
+
+    <div class="cs">
+      <div class="t"><span>驳回全部诉求</span>阳某等 9 人行政诉讼案</div>
+      <div class="d">2019 年出资 390 万设合伙企业（阳某出 150 万），2020 年以 7.5 元/股增资取得 52 万股限售股；2023 年 2 月解禁转让，转让所得 4,197.6 万，扣成本后按 20% 申报。2024 年 3 月税务事项通知书认定税目适用错误，应按经营所得 5%~35%。补缴后申请行政复议，继而提起行政诉讼，<b>法院驳回其全部诉求</b>。</div>
+      <div class="m">《税务研究》2025 年第 12 期</div>
+    </div>
+
+    <div class="cs">
+      <div class="t"><span>13.41 亿 / 1.06 亿</span>薇娅、邓伦（反向对照）</div>
+      <div class="d">两人并非股权激励，但病灶相同——<b>人为转换所得性质降税负</b>，只是方向相反：把本应按劳务报酬（3%~45%）缴纳的，转成经营所得（5%~35%）；而持股平台是想从经营所得往外钻到财产转让所得 20%。</div>
+      <div class="m">同为"所得性质定性错误"</div>
+    </div>
+
+    <div class="box r"><b>三类高危信号：</b><ul>
+      <li>持股平台已按 20% 申报且金额较大（千万级以上）</li>
+      <li>依赖地方招商红头文件作为 20% 依据（总局 <code>税总稽便函〔2018〕88号</code> 已点名要求纠正）</li>
+      <li>2022 年后仍按核定征收申报权益性投资所得（<code>财政部 税务总局公告2021年第41号</code> 一律查账）</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ========== 政策 ========== -->
+<section id="note">
+  <div class="card">
+    <h2>政策依据与合规要点</h2>
+    <div class="sub">以下文号均可检索核验，援引前请核对现行有效性</div>
+    <div class="pl">
+
+      <h3>支持 35%（经营所得）的证据链</h3>
+      <ul>
+        <li><code>国税发〔2011〕50号</code> 第二条（三）2：个人独资企业和合伙企业从事股权（票）、期货、基金等交易取得的所得，<strong>全部纳入生产经营所得</strong></li>
+        <li><code>财税〔2000〕91号</code> 附件一第四条：收入总额减成本费用损失后为投资者生产经营所得，比照个体工商户，适用 <strong>5%~35% 五级超额累进</strong></li>
+        <li><code>个税法实施条例</code> 第六条第五项：经营所得包括合伙企业的个人合伙人来源于境内注册合伙企业生产、经营的所得</li>
+        <li>厦门（2019）、福建（2021）、江西 12366 答复口径一致；<strong>公开检索未见任何一条省局答复直接支持 20%</strong></li>
+      </ul>
+
+      <h3>20% 的来源与其问题</h3>
+      <ul>
+        <li>法条说的是<strong>转让合伙企业中的财产份额</strong>（个人转让，乙型交易）——20% 无争议</li>
+        <li>员工持股平台的实际玩法是<strong>甲型交易</strong>：平台转让所持公司股权，个人按"先分后税"分得，性质是<strong>分配所得</strong>而非转让所得</li>
+        <li>地方招商文件（河南、安徽、浙江、江西、云南、新疆等园区）承诺 20%，已被 <code>税总稽便函〔2018〕88号</code> 点名违背税收征管法第三条、应予纠正</li>
+        <li><code>2026年第26号公告</code>（财政部、税务总局、证监会 2026-08-28）：个人转让上市公司限售股按财产转让所得 20%，但<strong>严格限于自然人直接持股</strong>，通过有限合伙、公司、信托、资管计划间接持有的一律不适用</li>
+      </ul>
+
+      <h3>核定征收：2022 年已堵死</h3>
+      <ul>
+        <li><code>财政部 税务总局公告2021年第41号</code> 第一条：持有股权、股票、合伙企业财产份额等<strong>权益性投资</strong>的个人独资企业、合伙企业，<strong>一律适用查账征收</strong>，2022-01-01 起施行</li>
+        <li>存量平台曾要求 2022-01-30 前主动报送；未如实报送按征管法处理</li>
+        <li>历史已按核定缴纳部分是否回溯，公告未写死，实务存在争取空间——<strong>但需专业人士个案判断</strong></li>
+        <li>沟通抓手：<code>2018年9月国务院常务会议</code> 要求按"不溯及既往、确保总体税负不增"原则完善政策</li>
+      </ul>
+
+      <h3>递延纳税：卡在次月 15 日</h3>
+      <ul>
+        <li><code>财税〔2016〕101号</code>：非上市公司股权激励满足条件可递延至转让时按 20% 缴纳，<strong>需同时满足七项条件</strong></li>
+        <li>备案时限：期权行权、限制性股票解禁、股权奖励获得的<strong>次月 15 日内</strong>，逾期即丧失优惠</li>
+        <li>持股平台障碍：101 号文激励标的为"境内居民企业的本公司股权"，员工拿的是<strong>合伙份额而非本公司股权</strong>；2016 年答记者问明确"授予关联公司股权不纳入优惠范围"，<code>总局2016年第62号公告</code> 备案表将激励对象限定为个人</li>
+        <li>实务中多数地区不受理持股平台递延备案，仅广州、惠州、长兴等少数办成——<strong>不要把递延当既定福利写进激励方案</strong></li>
+      </ul>
+
+      <h3>滞纳金与处罚</h3>
+      <ul>
+        <li>滞纳金：自欠缴之日起<strong>按日万分之五</strong>，年化约 <strong>18.25%</strong>，且不可税前扣除</li>
+        <li>社保场景另有 1~3 倍行政罚款（与个税不同，此处仅提示区分）</li>
+      </ul>
+
+      <h3>口径速查 FAQ</h3>
+      <dl class="kv">
+        <dt>合伙企业转让股权一定按 35%？</dt><dd>不一定，主流口径偏 35%，个案结合架构与地区判断</dd>
+        <dt>股息红利是否都按 20%？</dt><dd>是，<code>国税函〔2001〕84号</code> 第二条，这块无争议</dd>
+        <dt>核定征收还能用吗？</dt><dd>权益性投资的独资合伙企业，2022 年起一律查账</dd>
+        <dt>递延错过次月 15 日能补吗？</dt><dd>不能，未按期备案即丧失优惠</dd>
+        <dt>创投企业是否就能按 20%？</dt><dd>可能，但需"双备案"；未报备视同年度整体核算，5%~35%</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <b>免责声明</b>：本工具为政策梳理与税负测算演示，<b>不构成个案税务意见或法律意见</b>。文中政策文号、税率级距与案例数据以国家税务总局、财政部现行公开文件及公开披露信息为准；各地征管口径存在差异，具体交易的所得性质定性、适用的税收优惠及申报方式，请结合交易架构、所在地与主管税务机关沟通后确认，或咨询专业税务律师。<br>
+  📌 政策时效：2026 年 10 月。使用前请核对所引文件是否已修订或废止。<br>
+  © 浮生模样 · 融法于智，务尽于专
+</footer>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById(t.dataset.t).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+document.querySelectorAll('.rg2 input').forEach(i=>{
+  i.onchange=()=>{
+    document.querySelectorAll('.rg2 label').forEach(l=>l.classList.remove('on'));
+    if(i.checked) i.closest('label').classList.add('on');
+  };
+});
+
+/* ---------- 经营所得五级超额累进 ---------- */
+var BR=[[30000,.05,0],[90000,.10,1500],[300000,.20,10500],[500000,.30,40500],[Infinity,.35,65500]];
+function jy(n){
+  n=Math.max(0,n);
+  for(var i=0;i<BR.length;i++){ if(n<=BR[i][0]) return n*BR[i][1]-BR[i][2]; }
+  return 0;
+}
+function W(v){ return (parseFloat(v)||0); }
+function fmt(n){ // 元 -> 万元
+  var w=n/10000;
+  if(Math.abs(w)>=10000) return (w/10000).toFixed(2)+' 亿';
+  return w.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})+' 万';
+}
+function pct(n){ return (n*100).toFixed(2)+'%'; }
+
+/* ---------- 存取 ---------- */
+var KEY='fstc_v1';
+function saveIn(){
+  var o={};
+  ['amount','pn','ratio','days'].forEach(k=>{var e=document.getElementById(k); if(e) o[k]=e.value;});
+  ['arch','ded','paid'].forEach(n=>{
+    var c=document.querySelector('input[name='+n+']:checked'); if(c) o[n]=c.value;
+  });
+  try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}
+}
+function loadIn(){
+  try{
+    var o=JSON.parse(localStorage.getItem(KEY)||'{}');
+    ['amount','pn','ratio','days'].forEach(k=>{if(o[k]!=null) document.getElementById(k).value=o[k];});
+    ['arch','ded','paid'].forEach(n=>{
+      if(o[n]){var c=document.querySelector('input[name='+n+'][value="'+o[n]+'"]'); if(c) c.checked=true;}
+    });
+  }catch(e){}
+}
+function resetIn(){ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); }
+['amount','pn','ratio','days'].forEach(k=>{
+  var e=document.getElementById(k); if(e) e.addEventListener('input',saveIn);
+});
+document.querySelectorAll('input[type=radio]').forEach(r=>r.addEventListener('change',()=>{saveIn();syncArch();}));
+function syncArch(){
+  var a=(document.querySelector('input[name=arch]:checked')||{}).value;
+  var part=(a==='part');
+  document.getElementById('f-pn').style.display=part?'':'none';
+  document.getElementById('f-ratio').style.display=part?'':'none';
+  document.getElementById('f-ded').style.display=part?'':'none';
+  var paid=(document.querySelector('input[name=paid]:checked')||{}).value==='yes';
+  document.getElementById('f-days').style.display=paid?'':'none';
+}
+
+/* ---------- 主测算 ---------- */
+var LAST=null;
+function calc(){
+  var gross=W(document.getElementById('amount').value)*10000;
+  var arch=(document.querySelector('input[name=arch]:checked')||{}).value;
+  var pn=Math.max(1,Math.round(W(document.getElementById('pn').value)||1));
+  var ratio=W(document.getElementById('ratio').value)/100;
+  var ded=(document.querySelector('input[name=ded]:checked')||{}).value==='yes'?60000:0;
+  var paid=(document.querySelector('input[name=paid]:checked')||{}).value==='yes';
+  var days=Math.max(0,W(document.getElementById('days').value));
+
+  var r={arch:arch,gross:gross,pn:pn,ratio:ratio,ded:ded,paid:paid,days:days};
+  var mine=gross*ratio;
+
+  if(arch==='direct'){
+    r.label='自然人直接持股';
+    r.tax=mine*0.2;
+    r.rate=0.2;
+    r.basis='财产转让所得 20%（个人所得税法实施条例第六条第（八）项）';
+  }else if(arch==='part'){
+    r.label='合伙型持股平台';
+    var share=gross*ratio;
+    r.tax=jy(share-ded);
+    r.rate=share>0?r.tax/share:0;
+    r.basis='经营所得 5%~35% 五级超额累进（先分后税：平台转让所得按分配比例分摊后，各自套税率）';
+    r.totalPlatform=pn*jy(gross/pn-ded);
+  }else{
+    r.label='公司型持股平台';
+    var cit=gross*0.25;
+    var div=(gross*ratio-cit*ratio)*0.2;
+    r.tax=(cit+div)*(ratio>0?1:0);
+    r.rate=ratio>0?r.tax/(gross*ratio):0;
+    r.basis='企业所得税 25% + 股息红利个税 20%，综合税负 40%';
+  }
+  r.mine=mine;
+  r.net=mine-r.tax;
+
+  /* 对照：按 20% 口径 */
+  r.tax20=mine*0.2;
+  r.gap=r.tax-r.tax20;
+
+  /* 补税情景 */
+  if(paid){
+    r.gapTax=Math.max(0,r.gap);
+    r.late=r.gapTax*0.0005*days;
+    r.totalOwe=r.gapTax+r.late;
+  }
+
+  LAST=r;
+  render(r);
+  saveIn();
+}
+
+function render(r){
+  var h='';
+  h+='<div class="big">';
+  h+='<div class="bx"><div class="l">股权转让所得（'+ (r.ratio<1? '本人份额 '+ (r.ratio*100).toFixed(2)+'%' : '全额') +'）</div><div class="n">'+fmt(r.mine)+'</div><div class="u">税前</div></div>';
+  h+='<div class="bx"><div class="l">按 20% 口径</div><div class="n">'+fmt(r.tax20)+'</div><div class="u">财产转让所得</div></div>';
+  h+= (r.arch==='part')
+      ? '<div class="bx hl"><div class="l">按经营所得口径</div><div class="n">'+fmt(r.tax)+'</div><div class="u">实率 '+pct(r.rate)+'</div></div>'
+      : '<div class="bx"><div class="l">本架构应缴</div><div class="n">'+fmt(r.tax)+'</div><div class="u">实率 '+pct(r.rate)+'</div></div>';
+  h+= (r.gap>0)
+      ? '<div class="bx hl"><div class="l">差额（多缴）</div><div class="n">'+fmt(r.gap)+'</div><div class="u">20% 与 '+pct(r.rate)+' 之差</div></div>'
+      : '<div class="bx ok"><div class="l">差额</div><div class="n">'+fmt(Math.abs(r.gap))+'</div><div class="u">低于 20% 口径</div></div>';
+  h+='</div>';
+
+  if(r.arch==='part' && r.pn>1){
+    h+='<div class="box a"><b>平台整体口径：</b>若 '+r.pn+' 名自然人合伙人<b>平均分摊</b>，平台合计应缴约 <b>'+fmt(r.totalPlatform)+'</b>（每人 '+fmt(r.totalPlatform/r.pn)+'）。人数越多、分得越散，边际税率越低——这正是"先分后税"的缓冲作用。</div>';
+  }
+
+  /* 明细表 */
+  h+='<table><thead><tr><th>口径</th><th style="text-align:right">应纳税额</th><th style="text-align:right">实际税率</th><th>依据</th></tr></thead><tbody>';
+  h+='<tr><td>按 20%（财产转让所得）</td><td class="num">'+fmt(r.tax20)+'</td><td class="num">20.00%</td><td>实施条例第六条第（八）项</td></tr>';
+  h+='<tr><td>按经营所得（5%~35%）</td><td class="num">'+fmt(r.tax)+'</td><td class="num">'+pct(r.rate)+'</td><td>国税发〔2011〕50号 + 财税〔2000〕91号</td></tr>';
+  h+='<tr><td><b>差额</b></td><td class="num"><b>'+fmt(Math.abs(r.gap))+'</b></td><td class="num">'+(r.gap>0?'+':'−')+pct(Math.abs(r.gap/(r.mine||1)))+'</td><td>'+(r.gap>0?'按 35% 口径需补':'—')+'</td></tr>';
+  h+='</tbody></table>';
+  h+='<div class="tnote">适用依据：'+r.basis+(r.ded?'　｜　已减除 6 万元/年费用扣除':'　｜　未减除费用扣除（另有综合所得）')+'</div>';
+
+  if(r.paid && r.gapTax>0){
+    var yr=(r.late/(r.gapTax||1)/ (r.days/365) *100);
+    h+='<div class="box r"><b>⚠️ 补税情景测算</b><ul>';
+    h+='<li>已按 20% 缴纳：<b>'+fmt(r.tax20)+'</b></li>';
+    h+='<li>应补税款差额：<b>'+fmt(r.gapTax)+'</b></li>';
+    h+='<li>滞纳金（'+r.days+' 天，日万分之五）：<b>'+fmt(r.late)+'</b>　<span style="opacity:.8">折合年化约 18.25%</span></li>';
+    h+='<li><b>合计需补缴：'+fmt(r.totalOwe)+'</b></li>';
+    h+='</ul></div>';
+    h+='<div class="box a">这还只是税款与滞纳金。若被认定为偷税，另涉 <code>税收征管法</code> 第六十三条 0.5~5 倍罚款；且补税与滞纳金<b>均不可在企业所得税前扣除</b>。</div>';
+  }
+
+  /* 结论 */
+  if(r.arch==='part'){
+    h+='<div class="box g"><b>结论要点：</b><ul>';
+    h+='<li>别再把 20% 当作理所当然——<b>没有确切的官方支撑</b></li>';
+    h+='<li>按经营所得 5%~35% 口径做<b>测算和资金准备</b></li>';
+    h+='<li>涉及具体交易的定性，个案差异很大，<b>建议结合你的架构咨询专业税务律师</b></li>';
+    h+='</ul></div>';
+  }else if(r.arch==='corp'){
+    h+='<div class="box a">公司型平台综合税负 <b>40%</b>（25% 企业所得税 + 75%×20% 股息红利个税），高于合伙型最高档 35%，且<b>无法适用递延纳税</b>。但它在股息红利与再投资场景更灵活——选择取决于你的退出路径。</div>';
+  }else{
+    h+='<div class="box g"><b>自然人直接持股适用 20%，无夹层争议。</b>这也是为什么 <code>2026年第26号公告</code> 把限售股 20% 严格限定于"自然人直接持股"——隔着一层合伙企业，就领不到这张票。</div>';
+  }
+
+  document.getElementById('res').innerHTML=h;
+}
+
+/* ---------- 判定 ---------- */
+function judge(){
+  var g=n=>{var c=document.querySelector('input[name='+n+']:checked');return c?c.value:null;};
+  var q1=g('q1'),q2=g('q2'),q3=g('q3'),q4=g('q4');
+  if(!q1||!q2){ toast('请先完成第 1、2 题'); return; }
+  var v=null;
+
+  if(q1==='a'){
+    v={lv:q2==='a'?'l':'l',t:'财产转让所得 20%',
+       b:'你是自然人直接持有。'+(q2==='a'?'上市公司股票/限售股：<code>2026年第26号公告</code> 明确按"财产转让所得"20%，适用范围正是自然人直接持股。':'非上市公司股权：按财产转让所得 20%，无夹层争议。')};
+  }else if(q1==='c'){
+    v={lv:'m',t:'综合税负 40%（25% + 20%）',
+       b:'公司型平台：转让收益先在公司层面缴 25% 企业所得税，剩余分配给个人再缴 20% 股息红利个税，<b>综合税负 40%</b>，且不适用递延纳税。优势在股息红利与再投资安排。'};
+  }else{ // 合伙型
+    if(q2==='c'){
+      v={lv:'l',t:'财产转让所得 20%（乙型交易）',
+         b:'你转让的是<b>自己持有的合伙企业财产份额</b>，属个人转让，按"财产转让所得"20%，<b>无争议</b>。与平台转让被投资公司股权（甲型交易）是两回事，不要混淆。'};
+    }else if(q3==='a'){
+      v={lv:'l',t:'可选 20%（创投企业双备案）',
+         b:'完成"双备案"的创投企业，其个人合伙人从该基金分得的股权转让所得和股息红利所得，可依 <code>总局2023年24号公告</code> 第二条按 20% 缴纳。<b>但必须完成创投企业备案 + 备案后 30 日内向税务机关报备按单一投资基金核算</b>；未报备视同按年度整体核算，仍是 5%~35%。'};
+    }else if(q2==='a'){
+      v={lv:'h',t:'按经营所得 5%~35%（不适用 20%）',
+         b:'通过合伙企业<b>间接</b>持有上市公司股票/限售股：<code>2026年第26号公告</code> 第一条把限售股 20% <b>严格限于自然人直接持股</b>——通过有限合伙、公司、信托计划、资管计划及其他载体间接持有的，<b>一律不适用</b>。主流口径按经营所得 5%~35%。'};
+    }else{
+      v={lv:'h',t:'按经营所得 5%~35%（主流口径）',
+         b:'合伙平台转让非上市公司股权，个人合伙人按"先分后税"取得的是<b>分配所得</b>，依 <code>国税发〔2011〕50号</code> 第二条（三）2 纳入<b>生产经营所得</b>，适用 5%~35% 五级超额累进。公开检索未见省局答复直接支持 20%。'};
+    }
+    if(q4==='a'||q4==='b'){
+      v.b+='<br><br><b>⚠️ 地方文件风险：</b>你依赖地方招商红头文件作为 20% 依据。<code>税总稽便函〔2018〕88号</code> 已点名此类文件违背税收征管法第三条、应予纠正'+(q4==='a'?'；已按 20% 申报完成的存量平台，可援引 2018 年 9 月国务院常务会议"不溯及既往、确保总体税负不增"原则作为沟通抓手。':'；建议<b>不要按 20% 申报</b>，先与主管税务机关沟通口径。');
+    }
+  }
+  var lvMap={h:['h','高风险'],m:['m','中风险'],l:['l','低风险']};
+  var L=lvMap[v.lv];
+  var h='<div class="verdict"><div class="vt">判 定 结 果</div>';
+  h+='<div class="vm">'+v.t+'<span class="lv '+L[0]+'">'+L[1]+'</span></div>';
+  h+='<div class="vb">'+v.b+'</div>';
+  h+='<div class="vb" style="margin-top:12px;opacity:.75;font-size:12px">本判定基于通用政策口径推演，不构成个案意见。具体定性请与主管税务机关沟通或咨询专业税务律师。</div></div>';
+  document.getElementById('verdict').innerHTML=h;
+}
+
+/* ---------- 复制 / toast ---------- */
+function copyRes(){
+  if(!LAST){ toast('请先测算'); return; }
+  var r=LAST;
+  var s='【持股平台个税测算】\n'
+   +'股权转让所得：'+fmt(r.mine)+(r.ratio<1?'（本人份额 '+(r.ratio*100).toFixed(2)+'%）':'')+'\n'
+   +'架构：'+r.label+'\n'
+   +'按 20% 口径：'+fmt(r.tax20)+'\n'
+   +'按经营所得口径：'+fmt(r.tax)+'（实率 '+pct(r.rate)+'）\n'
+   +'差额：'+fmt(Math.abs(r.gap))+'\n';
+  if(r.paid&&r.gapTax>0) s+='应补税款：'+fmt(r.gapTax)+'\n滞纳金（'+r.days+'天）：'+fmt(r.late)+'\n合计：'+fmt(r.totalOwe)+'\n';
+  s+='\n— 浮生模样 · 持股平台个税测算器（测算演示，不构成个案意见）';
+  navigator.clipboard?navigator.clipboard.writeText(s).then(()=>toast('结果已复制'),()=>fallback(s)):fallback(s);
+  function fallback(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('结果已复制');}
+}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1900);}
+
+/* ---------- init ---------- */
+loadIn(); syncArch(); calc();
+</script>
+</body>
+</html>
